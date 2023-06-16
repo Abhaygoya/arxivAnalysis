@@ -1,0 +1,12 @@
+arxivAnalysis.code-workspace
+models-kaggle/arxiv-abstract-topics.ipynb
+models-kaggle/arxiv-dataset-topics.ipynb
+models-kaggle/arxiv-paper-recommendation.ipynb
+models-kaggle/research-paper-recommendation.ipynb
+models-kaggle/topic-modeling-arxiv-abstract-with-bertopic.ipynb
+models-kaggle/topic-modeling-arxiv-dataset.ipynb
+data/arxiv-metadata-oai-snapshot.json
+data/category_data.json
+data/category-map.json
+data/filtered_arxiv_db.csv
+data/general_topics.txt
