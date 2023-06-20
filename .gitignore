@@ -10,3 +10,5 @@ data/category_data.json
 data/category-map.json
 data/filtered_arxiv_db.csv
 data/general_topics.txt
+data/arxiv_since_2010.csv
+data/arxiv_categories.csv
