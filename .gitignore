@@ -12,3 +12,5 @@ data/filtered_arxiv_db.csv
 data/general_topics.txt
 data/arxiv_since_2010.csv
 data/arxiv_categories.csv
+data/cond-mat.csv
+data/cond-mat-2020-2021.pkl
