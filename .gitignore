@@ -14,3 +14,9 @@ data/arxiv_since_2010.csv
 data/arxiv_categories.csv
 data/cond-mat.csv
 data/cond-mat-2020-2021.pkl
+lib/bindings/utils.js
+lib/tom-select/tom-select.complete.min.js
+lib/tom-select/tom-select.css
+lib/vis-9.1.2/vis-network.css
+lib/vis-9.1.2/vis-network.min.js
+data/cond-mat-2021-2022.pkl
