@@ -19,13 +19,20 @@ def draw(G, pos, measures, measure_name):
     plt.title(measure_name)
 
 def saveGraph(G, pos, measures, measure_name):
+    sizes = np.fromiter(measures.values(), float)
+    colormap = mpl.cm.get_cmap('viridis')
+    normalize = mpl.colors.Normalize(vmin=sizes.min(), vmax=sizes.max())
+
     #Label nodes by measure
-    counter = 1
+    counter = 0
     for n in G.nodes(data=True):
-        n[1]['label']= "%.3f" % measures[counter]
+        n[1]['title']= "%.3f" % sizes[counter]
+        n[1]['color'] = colormap(sizes[counter]/sizes.max())
+        print(n[1]['color'])
         counter += 1
 
     #Visualize the network
-    net = Network(notebook=True,height='800px', width='100%',heading='')
+    net = Network(notebook=True,height='800px', width='100%', select_menu=True, cdn_resources='remote')#, select_menu=True, filter_menu=True)
     net.from_nx(G)
-    net.save_graph("output/model-network-"+measure_name+".html")
+    # net.save_graph("output/model-network-"+measure_name+".html")
+    net.show("output/model-network-"+measure_name+".html")

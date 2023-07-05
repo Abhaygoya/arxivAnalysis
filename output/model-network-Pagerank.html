@@ -2,10 +2,207 @@
     <head>
         <meta charset="utf-8">
         
-            <script src="lib/bindings/utils.js"></script>
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
             <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
             
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
         
 <center>
 <h1></h1>
@@ -52,6 +249,52 @@
     <body>
         <div class="card" style="width: 100%">
             
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="1">1</option>
+                                
+                                    <option value="4">4</option>
+                                
+                                    <option value="5">5</option>
+                                
+                                    <option value="6">6</option>
+                                
+                                    <option value="7">7</option>
+                                
+                                    <option value="8">8</option>
+                                
+                                    <option value="2">2</option>
+                                
+                                    <option value="9">9</option>
+                                
+                                    <option value="10">10</option>
+                                
+                                    <option value="3">3</option>
+                                
+                                    <option value="11">11</option>
+                                
+                                    <option value="12">12</option>
+                                
+                                    <option value="13">13</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
             
             <div id="mynetwork" class="card-body"></div>
         </div>
@@ -78,6 +321,14 @@
               };
 
               
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
 
               
 
@@ -88,7 +339,7 @@
                   
 
                   // parsing and collecting nodes and edges from the python
-                  nodes = new vis.DataSet([{"color": "#97c2fc", "id": 1, "label": "0.158", "shape": "dot", "size": 10, "title": "1"}, {"color": "#97c2fc", "id": 4, "label": "0.038", "shape": "dot", "size": 10, "title": "4"}, {"color": "#97c2fc", "id": 5, "label": "0.038", "shape": "dot", "size": 10, "title": "5"}, {"color": "#97c2fc", "id": 6, "label": "0.063", "shape": "dot", "size": 10, "title": "6"}, {"color": "#97c2fc", "id": 7, "label": "0.063", "shape": "dot", "size": 10, "title": "7"}, {"color": "#97c2fc", "id": 8, "label": "0.095", "shape": "dot", "size": 10, "title": "8"}, {"color": "#97c2fc", "id": 2, "label": "0.148", "shape": "dot", "size": 10, "title": "2"}, {"color": "#97c2fc", "id": 9, "label": "0.065", "shape": "dot", "size": 10, "title": "9"}, {"color": "#97c2fc", "id": 10, "label": "0.065", "shape": "dot", "size": 10, "title": "10"}, {"color": "#97c2fc", "id": 3, "label": "0.067", "shape": "dot", "size": 10, "title": "3"}, {"color": "#97c2fc", "id": 11, "label": "0.112", "shape": "dot", "size": 10, "title": "11"}, {"color": "#97c2fc", "id": 12, "label": "0.043", "shape": "dot", "size": 10, "title": "12"}, {"color": "#97c2fc", "id": 13, "label": "0.043", "shape": "dot", "size": 10, "title": "13"}]);
+                  nodes = new vis.DataSet([{"color": [0.993248, 0.906157, 0.143936, 1.0], "id": 1, "label": "1", "shape": "dot", "size": 10, "title": "0.158"}, {"color": [0.233603, 0.313828, 0.543914, 1.0], "id": 4, "label": "4", "shape": "dot", "size": 10, "title": "0.038"}, {"color": [0.233603, 0.313828, 0.543914, 1.0], "id": 5, "label": "5", "shape": "dot", "size": 10, "title": "0.038"}, {"color": [0.162142, 0.474838, 0.55814, 1.0], "id": 6, "label": "6", "shape": "dot", "size": 10, "title": "0.063"}, {"color": [0.162142, 0.474838, 0.55814, 1.0], "id": 7, "label": "7", "shape": "dot", "size": 10, "title": "0.063"}, {"color": [0.137339, 0.662252, 0.515571, 1.0], "id": 8, "label": "8", "shape": "dot", "size": 10, "title": "0.095"}, {"color": [0.83527, 0.886029, 0.102646, 1.0], "id": 2, "label": "2", "shape": "dot", "size": 10, "title": "0.148"}, {"color": [0.159194, 0.482237, 0.558073, 1.0], "id": 9, "label": "9", "shape": "dot", "size": 10, "title": "0.065"}, {"color": [0.159194, 0.482237, 0.558073, 1.0], "id": 10, "label": "10", "shape": "dot", "size": 10, "title": "0.065"}, {"color": [0.154815, 0.493313, 0.55784, 1.0], "id": 3, "label": "3", "shape": "dot", "size": 10, "title": "0.067"}, {"color": [0.288921, 0.758394, 0.428426, 1.0], "id": 11, "label": "11", "shape": "dot", "size": 10, "title": "0.112"}, {"color": [0.21813, 0.347432, 0.550038, 1.0], "id": 12, "label": "12", "shape": "dot", "size": 10, "title": "0.043"}, {"color": [0.21813, 0.347432, 0.550038, 1.0], "id": 13, "label": "13", "shape": "dot", "size": 10, "title": "0.043"}]);
                   edges = new vis.DataSet([{"from": 1, "to": 4, "width": 1}, {"from": 1, "to": 5, "width": 1}, {"from": 1, "to": 6, "width": 1}, {"from": 1, "to": 7, "width": 1}, {"from": 1, "to": 8, "width": 1}, {"from": 2, "to": 9, "width": 1}, {"from": 2, "to": 10, "width": 1}, {"from": 2, "to": 6, "width": 1}, {"from": 2, "to": 7, "width": 1}, {"from": 2, "to": 8, "width": 1}, {"from": 3, "to": 9, "width": 1}, {"from": 3, "to": 10, "width": 1}, {"from": 8, "to": 11, "width": 1}, {"from": 11, "to": 12, "width": 1}, {"from": 11, "to": 13, "width": 1}]);
 
                   nodeColors = {};
@@ -139,6 +390,8 @@
 
                   
 
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
                   
 
                   
