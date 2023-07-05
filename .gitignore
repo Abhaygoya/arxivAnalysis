@@ -20,3 +20,4 @@ lib/tom-select/tom-select.css
 lib/vis-9.1.2/vis-network.css
 lib/vis-9.1.2/vis-network.min.js
 data/cond-mat-2021-2022.pkl
+__pycache__/functions.cpython-310.pyc
