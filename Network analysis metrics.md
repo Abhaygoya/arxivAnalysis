@@ -1,4 +1,6 @@
-# Network analysis metrics
+# Network analysis
+
+## Centrality
 
 Centrality is a term used to describe the importance of nodes in a network. The most important nodes being those towards the center, which peripheral nodes interact through. However, in a quantitative sense, this is not well-defined. There are many approaches/methods for calculating centrality, which are relevant in different cases. 
 
@@ -16,7 +18,7 @@ https://en.wikipedia.org/wiki/Shapley%E2%80%93Shubik_power_index
 
 ### Degree centrality
 
-Possibly the simplest measure of centrality, degree centrality is simply defined as the degree of a node. I.e. the centrality of node $i$ is the number of nodes directly connected to $i$. 
+Possibly the simplest measure of centrality, degree centrality is simply defined as the degree of a node. I.e. the centrality of node $i$ is the number of nodes directly connected to $i$. Usually, this is normalized by the number of other nodes in the network ($N-1$), so it is represented as a fraction of all possible connections.
 
 ### Betweenness centrality
 
@@ -73,3 +75,58 @@ This is where the damping factor $\alpha$ enters. Think of this as a chance for 
 $$ P_i = \frac{1-\alpha}{N} + \alpha \sum_{j \in B_i} \dfrac{P_j}{L_j} $$
 
 This gives each node a baseline factor based on the total number of nodes, which is added to the value defined in the basic algorithm section above (scaled by the damping factor, so the total of all ranks still sums to 1). The damping factor is usually set to $\alpha=0.85$, but there are various reasons one might wish to change that.
+
+## Shapley Values in Networks
+
+All of the above measures quantify a single node's contribution to the overall network. Recently, there has been a realization that this is sometime insufficient. Nodes identified by the traditional metrics have a relatively large impact on their own, but these metrics fail to capture impact in groups. For example, consider the difference between a power network that loses a single node to one that undergoes simultaneous failure at multiple nodes. Traditional metrics are designed for the first case and can completely miss that a group of nodes is absolutely critical if the network can still function without any one of the group.
+
+An approach to tackle this problem is by adapting [Shapley values](/1QA9sUt7ToqXG3C_MyHUtQ) to networks. The premise is that each node's value is determined by its marginal contributions to all possible coalitions of nodes. To compute Shapley Values in network systems, we need to first define some sort of coalitional game. Michalak et al have [a paper on Arxiv](https://arxiv.org/abs/1402.0567) that discusses several games that can be defined and efficient, exact algorithms to compute the Shapley Values corresponding to those games. These are all variations of degree and closeness centrality.
+
+### Game 1
+
+This is analogous to degree centrality, and originally proposed by [Suri and Narahari](https://dl.acm.org/doi/10.5555/1402821.1402911) in the context of determining the top-*k* nodes in social networks. For a graph $G(V,E)$ consider a coalition $C \subseteq V$. The fringe of $C$, denoted $F_C$, is defined as the set of vertices in $C$ or directly connected to it. Formally,
+
+$$F_C =\{ v \in V (G) : v \in C \,{\rm or}\, \exists u \in C {\, \rm such\, that\,} (u, v) \in E(G)\} $$
+
+The game is characterized by the value function $\nu_1={\rm size}(F_C)$. For this game, the Shapley Value of a node indicates average marginal contribution of that node to a coalition. In other words, how much does adding the node increase the size of $F_C$? 
+
+#### Algorithm
+
+There is a simple, exact formula for computing this Shapley value without having to iterate through all possible coalitions. See [Michalak et al](https://arxiv.org/abs/1402.0567) for the proof. 
+
+$$ SV(v_i) = \sum_{v_j\in(\{v_i\} \cup N(v_i))} \frac{1}{1+deg(v_j)} $$
+
+where $N(v_i)$ is the set of neighbors of node $v_i$ and $deg(v_j)$ is the degree of node $v_j$. Intuitively, a high $SV$ corresponds to a node with many neighbors of low degree. This feature indicates a high liklihood that adding the node to a coalition will substantially increase the size of the fringe.
+
+### Game 2
+
+This is a generalized version of the last game. Instead of the fringe containing all nodes with a connection to $C$, we only count nodes with at least $k$ connections to $C$. This introduces a new parameter $k$, and reduces to the Game 1 case if we set $k=1$. This seems like a metric that will be particularly useful for scenarios where there is a threshold of connectivity that is meaningful in some way (as a simple example, consider a network where exposure to $k$ nodes is required for transmission).
+
+Given the extra condition, this calculation seems a bit more daunting. There are many conditionals based on the degree of a node and its existing connections. However, this can still be worked out to a simple algorithm.
+
+> #### Algorithm for Game 2
+>**Input**: Unweighted graph $G(V, E)$, positive integer $k$ 
+>**Output**: Shapley value of all nodes in $V (G)$ for game $g_2$ 
+>
+>for $v_i \in V (G)$: 
+>>$SV[v_i] = min(1, \frac{k}{1+deg(v_i)} )$ 
+>>for $v_j \in N(v_i)$:
+>>>$SV[v_i] += max(0, \frac{deg(v_j)−k+1}{ deg(v_j)(1+deg(v_j))} )$ 
+
+A quick test for this is to verify that, with $k=1$, this returns the same Shapley Values as Game 1.
+
+### Game 3
+
+The third approach is one that works with weighted networks. Instead of simply looking at direct connections, we introduce a cutoff distance $d_{\rm cut}$. The distance between two nodes $D_{ij}$ is lowest sum of edge weights that connect $v_i$ to $v_j$. The extended neighborhood of $C$ is defined as the set of all nodes which are at most a distance of $d_{\rm cut}$ from a node in $C$. Formally, let the extended neighborhood of any node be:
+
+$$N(v_i,d_{\rm cut}) = \{v_j \neq v_i: D_{ij} \leq d_{\rm cut}\} $$
+
+The extended degree is then $deg(v_i,d_{\rm cut})=size(N(v_i,d_{\rm cut}))$. With these definitions, the Shapley Value can be calculated in almost exactly the same way as for Game 1, simply substituting degree and neighborhood with their extended versions.
+
+$$SV(v_i) = \sum_{v_j\in(\{v_i\} \cup N(v_i,d_{\rm cut}))} \frac{1}{1+deg(v_j,d_{\rm cut})}$$
+
+This allows for a "smarter" filtering of connections based on some weighted distance from a  coalition $C$ rather than just single edges. This can also be reduced to the first game by simply weighting all edges equally as $d_{\rm cut}$.
+
+### Shapley Betweenness
+
+The Shapley Value approach to centrality has also been extended to a version of betweenness. [A conference paper](https://eprints.soton.ac.uk/337181/1/aamas2011_sample_tm.pdf) by Szczepanski et al introduced this idea in 2012. This is refined further in their [recent paper](https://www.sciencedirect.com/science/article/pii/S0004370215001666). Their algorithm was implemented in python by Adam Price (https://gist.github.com/adamprice97/3bc20831cdb7f4a79955ad7014a4323c).
