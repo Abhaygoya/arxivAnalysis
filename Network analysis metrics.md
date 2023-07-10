@@ -78,7 +78,9 @@ This gives each node a baseline factor based on the total number of nodes, which
 
 ## Shapley Values in Networks
 
-To compute Shapley Values in network systems, we need to first define some sort of coalitional game. Michalak et al have [a paper on Arxiv](https://arxiv.org/abs/1402.0567) that discusses several games that can be defined and efficient, exact algorithms to compute the Shapley Values corresponding to those games.
+All of the above measures quantify a single node's contribution to the overall network. Recently, there has been a realization that this is sometime insufficient. Nodes identified by the traditional metrics have a relatively large impact on their own, but these metrics fail to capture impact in groups. For example, consider the difference between a power network that loses a single node to one that undergoes simultaneous failure at multiple nodes. Traditional metrics are designed for the first case and can completely miss that a group of nodes is absolutely critical if the network can still function without any one of the group.
+
+An approach to tackle this problem is by adapting [Shapley values](/1QA9sUt7ToqXG3C_MyHUtQ) to networks. The premise is that each node's value is determined by its marginal contributions to all possible coalitions of nodes. To compute Shapley Values in network systems, we need to first define some sort of coalitional game. Michalak et al have [a paper on Arxiv](https://arxiv.org/abs/1402.0567) that discusses several games that can be defined and efficient, exact algorithms to compute the Shapley Values corresponding to those games. These are all variations of degree and closeness centrality.
 
 ### Game 1
 
@@ -123,4 +125,8 @@ The extended degree is then $deg(v_i,d_{\rm cut})=size(N(v_i,d_{\rm cut}))$. Wit
 
 $$SV(v_i) = \sum_{v_j\in(\{v_i\} \cup N(v_i,d_{\rm cut}))} \frac{1}{1+deg(v_j,d_{\rm cut})}$$
 
-This allows for a "smarter" filtering of connections based on some weighted distance froma  coalition $C$ rather than just single edges. This can also be reduced to the first game by simply weighting all edges equally as $d_{\rm cut}$.
+This allows for a "smarter" filtering of connections based on some weighted distance from a  coalition $C$ rather than just single edges. This can also be reduced to the first game by simply weighting all edges equally as $d_{\rm cut}$.
+
+### Shapley Betweenness
+
+The Shapley Value approach to centrality has also been extended to a version of betweenness. [A conference paper](https://eprints.soton.ac.uk/337181/1/aamas2011_sample_tm.pdf) by Szczepanski et al introduced this idea in 2012. This is refined further in their [recent paper](https://www.sciencedirect.com/science/article/pii/S0004370215001666). Their algorithm was implemented in python by Adam Price (https://gist.github.com/adamprice97/3bc20831cdb7f4a79955ad7014a4323c).
