@@ -7,11 +7,11 @@ import queue
 def shapleyGame1(G: nx.Graph) -> list[float]:
     sv = []
     for i in range(1, len(G.nodes)+1):
-        sv.append(1/(1+G.degree[i]))
-        for j in range(0, len(G.nodes)):
-            if i != j:
-                if G.has_edge(i,j):
-                    sv[i-1] += 1/(1+G.degree[j])
+            sv.append(1/(1+G.degree[i]))
+            for j in range(1, len(G.nodes)+1):
+                if i != j:
+                    if G.has_edge(i,j):
+                        sv[i-1] += 1/(1+G.degree[j])
     return sv
 
 def shapleyGame2(G: nx.Graph, k: int) -> list[float]:
