@@ -36,6 +36,24 @@ $$ C(i) = \dfrac{N-1}{\sum_j d(i,j)} $$
 
 where $N$ is the total number of nodes and $d(i,j)$ is the distance, i.e. number of edges, between nodes $i$ and $j$.
 
+### Current-flow (random walk) centrality
+
+The [current-flow centrality](https://link.springer.com/chapter/10.1007/978-3-540-31856-9_44) is a variant of betweennness that, instead of counting only the shortest path between two nodes, calculates the effective current through each node when a voltage source and sink are placed on nodes $i$ and $j$, respectively. This is equivalent to the [random walk centrality](https://www.sciencedirect.com/science/article/abs/pii/S0378873304000681), which counts the net number of times each node is traversed in a random walk between nodes $i$ and $j$. Compared to the standard betweenness, these approaches value paths that are not strictly the shortest, although more weight is still placed on shorter paths. 
+
+As these are equivalent, we discuss the more straightforward current calculation here. Consider the network in question as a resistor network where nodes are junctions and edges have resistance $r_{ij}=1$ (this can easily be adjusted to account for weighted graphs). Putting together all the edge resistances gives us the resistance matrix $R$. Into this network, we select a pair of nodes as the source and target. We define $u_i$ as the external current (with $u_s=-u_t=1$, and $u_i=0$ elsewhere,  where $s$ and $t$ are the source and target). Finally, let $v_i$ be the potential at each node.
+
+The current flows can be calculated using Kirchhoff's law of current conservation, which states that the current flowing into a node is equal to the current flowing out. 
+
+$$\sum_j r_{ij}(v_i-v_j) = u_i $$
+
+For calculating current betweenness, we are interested in the current flowing through each node except $s$ and $t$. This means $u_i=0$ for these nodes, and thus the current going through is half of the current along the incident edges (in=out).
+
+$$I_i=\frac{1}{2}\sum_j r_{ij} |v_i-v_j| $$
+
+The current flow betweenness follows as the average of this current over all source/target pairs:
+
+$$C_i = \frac{\sum_{s<t}I_i}{(1/2)N(N-1)} $$
+
 ### Eigenvector centrality
 
 While the metrics thus far are fairly intuitive in terms of what they say about a node, the eigenvector centrality is best understood in terms of the network as a whole. Let us define the adjacency matrix $A$ with vertices $a_{ij}=1$ if nodes $i$ and $j$ are neighbors, and $a_{ij}=0$ otherwise. Note $a_{ii}=0$ as nodes do not count themselves as neighbors. One can think of this as a linear transformation which, taking a vector $x$ that represents some set of nodes, returns the nodes which are adjacent to those. Given this matrix, consider all eigenvectors:
@@ -68,7 +86,7 @@ However, there is an issue with this definition. Consider 2 nodes such that they
 
 The issue above is solved by the introduction of a damping factor $\alpha$. To understand this, let us think of the PageRank in the context of a random walk across the network (referred to as a random surfer in the context of webpages). If there were no sinks, the Rank would reflect the probability that an agent, clicking links at random, would end up at a specific node after a long time (long meaning that the result is independent of starting location).
 
-Now clearly, the basic algorithm captures an important aspect of this: highly linked sites are ranked higher, with links from highly ranked sites weighted more than those from lower ranked sites. However, there are some mathematical idiosyncracies that don't necessarily align with the actual goal of the metric in practice. Rank sinks (and sources) for example, can lead to non-meaningful ranks due to the directed nature of the graph. 
+Now clearly, the basic algorithm captures an important aspect of this: highly linked sites are ranked higher, with links from highly ranked sites weighted more than those from lower ranked sites. However, there are some mathematical idiosyncrasies that don't necessarily align with the actual goal of the metric in practice. Rank sinks (and sources) for example, can lead to non-meaningful ranks due to the directed nature of the graph. 
 
 This is where the damping factor $\alpha$ enters. Think of this as a chance for the surfer to pick a node independently from the links on their current node. In principle, their choice could follow any distribution, but in practice this is usually taken to be a uniform distribution over all existing nodes. Mathematically, the PageRank becomes:
 
@@ -80,7 +98,7 @@ This gives each node a baseline factor based on the total number of nodes, which
 
 All of the above measures quantify a single node's contribution to the overall network. Recently, there has been a realization that this is sometime insufficient. Nodes identified by the traditional metrics have a relatively large impact on their own, but these metrics fail to capture impact in groups. For example, consider the difference between a power network that loses a single node to one that undergoes simultaneous failure at multiple nodes. Traditional metrics are designed for the first case and can completely miss that a group of nodes is absolutely critical if the network can still function without any one of the group.
 
-An approach to tackle this problem is by adapting [Shapley values](/1QA9sUt7ToqXG3C_MyHUtQ) to networks. The premise is that each node's value is determined by its marginal contributions to all possible coalitions of nodes. To compute Shapley Values in network systems, we need to first define some sort of coalitional game. Michalak et al have [a paper on Arxiv](https://arxiv.org/abs/1402.0567) that discusses several games that can be defined and efficient, exact algorithms to compute the Shapley Values corresponding to those games. These are all variations of degree and closeness centrality.
+An approach to tackle this problem is by adapting [Shapley values](/1QA9sUt7ToqXG3C_MyHUtQ) to networks. The premise is that each node's value is determined by its marginal contributions to all possible coalitions of nodes. To compute Shapley Values in network systems, we need to first define some sort of coalitional game. This means defining a value function $\nu(C)$ from $2^N \to \R$ Michalak et al have [a paper on Arxiv](https://arxiv.org/abs/1402.0567) that discusses several games that can be defined and efficient, exact algorithms to compute the Shapley Values corresponding to those games. These are all variations of degree and closeness centrality.
 
 ### Game 1
 
@@ -130,3 +148,14 @@ This allows for a "smarter" filtering of connections based on some weighted dist
 ### Shapley Betweenness
 
 The Shapley Value approach to centrality has also been extended to a version of betweenness. [A conference paper](https://eprints.soton.ac.uk/337181/1/aamas2011_sample_tm.pdf) by Szczepanski et al introduced this idea in 2012. This is refined further in their [recent paper](https://www.sciencedirect.com/science/article/pii/S0004370215001666). Their algorithm was implemented in python by Adam Price (https://gist.github.com/adamprice97/3bc20831cdb7f4a79955ad7014a4323c).
+
+I've been testing this and getting unusual results. No obvious error in the code/algorithm, but the results are very skewed. In addition, they don't match the results quoted in the paper.
+
+### Helping Centrality
+
+https://ifaamas.org/Proceedings/aamas2020/pdfs/p566.pdf
+
+### Review article
+
+https://www.researchgate.net/publication/322222335_Game-theoretic_Network_Centrality_A_Review
+
